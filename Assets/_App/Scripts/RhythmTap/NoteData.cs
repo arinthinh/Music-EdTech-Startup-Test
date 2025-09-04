@@ -4,13 +4,13 @@
 public class NoteData
 {
     public NoteType NoteType;
-    public double Time;
+    public double Tick;
     public bool IsSpawned;
     
-    public NoteData(NoteType noteType, double time)
+    public NoteData(NoteType noteType, double tick)
     {
         NoteType = noteType;
-        Time = time;
+        Tick = tick;
     }
 
 }

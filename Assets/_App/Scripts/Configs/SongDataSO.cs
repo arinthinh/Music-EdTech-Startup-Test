@@ -14,7 +14,7 @@ public class SongData
 {
     public string SongId;
     public string SongName;
-    public string MidiFile;
+    public int MidiIndex;
     public int BPM;
     public int MainOctave;
 }

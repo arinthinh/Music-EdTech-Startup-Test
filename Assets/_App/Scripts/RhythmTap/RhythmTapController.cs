@@ -14,8 +14,6 @@ public class RhythmTapController : MonoBehaviour
     private List<MovingNote> _activeNotes = new();
     [SerializeField] private List<NoteData> _noteDatas = new();
 
-    private readonly double _spawnLeadTime = 1000; // Time in miliseconds before the note should be hit to spawn it
-
     private void OnEnable()
     {
         EventBus.Subscribe<NoteStartHoldEvent>(OnNoteStartHold);
@@ -31,16 +29,22 @@ public class RhythmTapController : MonoBehaviour
     private async UniTaskVoid Start()
     {
         await UniTask.WaitForSeconds(2f);
+        _midiFilePlayer.MPTK_MidiIndex = _songData.MidiIndex;
         _midiFilePlayer.MPTK_Load();
-        _midiFilePlayer.MPTK_Tempo = 80;
-        LoadNoteData();
+        await UniTask.WaitUntil(() => _midiFilePlayer.MPTK_StatusLastMidiLoaded == LoadingStatusMidiEnum.Success);
+        _midiFilePlayer.MPTK_EnableChangeTempo = true;
+        _midiFilePlayer.MPTK_Tempo = _songData.BPM;
+        SpawnNotes();
         await UniTask.Yield();
         StartSong();
+        await UniTask.WaitForSeconds(1f);
+        _midiFilePlayer.MPTK_Tempo += 20;
     }
 
-    private void LoadNoteData()
+    private void SpawnNotes()
     {
         _noteDatas.Clear();
+
         var midiEvents = _midiFilePlayer.MPTK_MidiEvents;
         foreach (var midiEvent in midiEvents)
         {
@@ -49,37 +53,32 @@ public class RhythmTapController : MonoBehaviour
                 var note = ConvertMidiNoteToNoteType(midiEvent.Value);
                 if (note != NoteType.None)
                 {
-                    _noteDatas.Add(new( note, midiEvent.RealTime));
+                    _noteDatas.Add(new(note, midiEvent.Tick));
                 }
             }
+        }
+
+        foreach (var noteData in _noteDatas)
+        {
+            var laneIndex = (int)noteData.NoteType - 1;
+            var laneTransform = _lanes[laneIndex];
+            var note = _noteFactory.Get();
+            note.OnSpawn(noteData, laneTransform);
+            _activeNotes.Add(note);
         }
     }
 
 
     private void StartSong()
     {
-        _activeNotes.Clear();
         _midiFilePlayer.MPTK_Play();
     }
 
     private void Update()
     {
-        var currentSongTime = _midiFilePlayer.MPTK_RealTime;
-        HandleNoteSpawning(currentSongTime);
-        UpdateActiveNotes(currentSongTime);
+        if (!_midiFilePlayer.MPTK_IsPlaying) return;
+        UpdateActiveNotes(_midiFilePlayer.MPTK_MidiLoaded.MPTK_TickPlayer);
     }
-
-    private void HandleNoteSpawning(double currentSongTime)
-    {
-        foreach (var noteData in _noteDatas)
-        {
-            if (ShouldSpawnNote(noteData, currentSongTime))
-            {
-                SpawnNote(noteData);
-            }
-        }
-    }
-
 
     /// <summary>
     /// Convert MIDI number in octave 5 to NoteType. Returns null if not octave 5 or not a natural note.
@@ -104,27 +103,16 @@ public class RhythmTapController : MonoBehaviour
         }
     }
 
-    private void SpawnNote(NoteData noteData)
+    private void UpdateActiveNotes(double currentTick)
     {
-        var laneIndex = (int)noteData.NoteType;
-        var laneTransform = _lanes[laneIndex];
-        var note = _noteFactory.Get();
-        note.transform.position = laneTransform.position;
-        note.OnSpawn(noteData, laneTransform);
-        _activeNotes.Add(note);
-    }
-
-    private bool ShouldSpawnNote(NoteData noteData, double currentSongTime)
-    {
-        return !noteData.IsSpawned && noteData.Time >= currentSongTime &&
-               noteData.Time < currentSongTime + _spawnLeadTime;
-    }
-
-    private void UpdateActiveNotes(double currentSongTime)
-    {
-        foreach (var note in _activeNotes)
+        foreach (var note in _activeNotes.ToArray())
         {
-            note.Move(currentSongTime);
+            note.UpdatePosition(currentTick);
+            if (note.CurrentPositionX <= -Define.NOTE_SPAWN_DISTANCE)
+            {
+                _activeNotes.Remove(note);
+                _noteFactory.Release(note);
+            }
         }
     }
 
@@ -136,5 +124,25 @@ public class RhythmTapController : MonoBehaviour
 
     private void OnNoteStopHold(NoteStopHoldEvent obj)
     {
+    }
+
+    /*
+    public static float CalculateNoteSpeed(double bpm, int ticksPerQuarterNote = 480)
+    {
+        return (float)(bpm * ticksPerQuarterNote / 60) / 200f;
+    }
+    */
+
+    public static float CalculateNoteSpeed(double noteTick, double currentTick, double bpm)
+    {
+        double ticksPerSecond = bpm * Define.TICKS_PER_QUARTER_NOTE / 60.0;
+        double secondsToArrive = (noteTick - currentTick) / ticksPerSecond;
+        if (secondsToArrive <= 0) return 0f;
+        return (float)(Define.NOTE_SPAWN_DISTANCE / secondsToArrive);
+    }
+
+    public static float CalculateTicksPerSecond(float bpm)
+    {
+        return Define.TICKS_PER_QUARTER_NOTE * bpm / 60f;
     }
 }

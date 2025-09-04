@@ -11,6 +11,6 @@
   </SoundFonts>
   <IndexSelectedSF>0</IndexSelectedSF>
   <MidiFiles>
-    <string>if_you_are_happy</string>
+    <string>if_you_happy</string>
   </MidiFiles>
 </MidiSet>
