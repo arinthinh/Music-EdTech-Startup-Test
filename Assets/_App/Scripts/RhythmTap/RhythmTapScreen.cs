@@ -2,11 +2,12 @@ using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using MidiPlayerTK;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-///  Act as a main controller for the Rhythm Tap game mode.
+/// Act as a main controller for the Rhythm Tap game mode.
 /// </summary>
 public class RhythmTapScreen : UIScreen
 {
@@ -20,8 +21,10 @@ public class RhythmTapScreen : UIScreen
     [Header("OBJECTS")]
     [SerializeField] private RectTransform _contentPanel;
     [SerializeField] private Transform[] _lanes;
+
+    [Header("UI OBJECTS")]
     [SerializeField] private Button _startButton;
-    [SerializeField] private RectTransform[] _keys;
+    [SerializeField] private TextMeshProUGUI _scoreTMP;
 
     private float _hitOffset;
     private bool _isPlaying;
@@ -30,6 +33,23 @@ public class RhythmTapScreen : UIScreen
 
     private readonly List<MovingNote> _activeNotes = new();
     private readonly List<NoteData> _noteDatas = new();
+
+    private void OnEnable()
+    {
+        _startButton.onClick.AddListener(HandlePlayButtonClicked);
+        NoteButton.OnNoteButtonPressed += HandleNoteButtonPressed;
+    }
+
+    private void OnDisable()
+    {
+        _startButton.onClick.RemoveListener(HandlePlayButtonClicked);
+        NoteButton.OnNoteButtonPressed -= HandleNoteButtonPressed;
+    }
+
+    public override void OnInit(UIManager uiManager)
+    {
+        base.OnInit(uiManager);
+    }
 
     public override void Show()
     {
@@ -49,7 +69,7 @@ public class RhythmTapScreen : UIScreen
     {
         _midiFilePlayer.MPTK_MidiIndex = _songData.MidiIndex;
         _midiFilePlayer.MPTK_Load();
-        await UniTask.WaitUntil(() => _midiFilePlayer.MPTK_StatusLastMidiLoaded == LoadingStatusMidiEnum.Success);
+        await UniTask.Yield();
         _midiFilePlayer.MPTK_EnableChangeTempo = true;
         _midiFilePlayer.MPTK_Tempo = _songData.BPM;
         _lastTick = _midiFilePlayer.MPTK_TickLast;
@@ -81,6 +101,7 @@ public class RhythmTapScreen : UIScreen
             var note = _noteFactory.Get();
             note.OnSpawn(noteData, laneTransform);
             _activeNotes.Add(note);
+            note.UpdatePosition(0, _songData.BPM / 160f);
         }
     }
 
@@ -116,16 +137,16 @@ public class RhythmTapScreen : UIScreen
         foreach (var note in _activeNotes.ToArray())
         {
             // Move note
-            note.UpdatePosition(currentTick);
+            note.UpdatePosition(currentTick, _songData.BPM / 160f);
 
             // Check for miss
-            if (!note.IsScored && note.CurrentPositionX <= 300)
+            if (!note.IsScored && note.CurrentPositionX <= -170)
             {
                 note.SetScored(false);
             }
 
             // If note is out of screen, remove it
-            if (note.CurrentPositionX <= -Define.NOTE_SPAWN_DISTANCE)
+            if (note.CurrentPositionX <= -500)
             {
                 _activeNotes.Remove(note);
                 _noteFactory.Release(note);
@@ -135,6 +156,8 @@ public class RhythmTapScreen : UIScreen
 
     private void ClearLevel()
     {
+        _score = 0;
+        _scoreTMP.text = "0";
         foreach (var note in _activeNotes)
         {
             _noteFactory.Release(note);
@@ -146,6 +169,8 @@ public class RhythmTapScreen : UIScreen
     private void HandleEndSong()
     {
         _isPlaying = false;
+        ClearLevel();
+        Show();
     }
 
 
@@ -160,22 +185,34 @@ public class RhythmTapScreen : UIScreen
 
     private void HandlePlayButtonClicked()
     {
-        // Hide start button animation
-        _startButton.interactable = false;
-        _startButton.image.rectTransform.DOAnchorPosY(-1000, 0.5f)
-            .SetRelative()
-            .SetEase(Ease.InBack)
-            .OnComplete(() =>
-            {
-                _startButton.gameObject.SetActive(false);
-                _startButton.image.rectTransform.DOAnchorPosY(1000, 0);
-            });
-
-        // Play the song
+        _startButton.gameObject.SetActive(false);
+        _isPlaying = true;
         _midiFilePlayer.MPTK_Play();
     }
 
-    private void IsScored()
+    private void HandleNoteButtonPressed(NoteType noteType)
     {
+        if (!_isPlaying) return;
+
+        foreach (var note in _activeNotes)
+        {
+            if (note.IsScored) continue;
+            if (note.CurrentPositionX is < 10 and > -100)
+            {
+                // Hit
+                if (noteType == note.NoteType)
+                {
+                    note.SetScored(true);
+                    _score += 100;
+                    _scoreTMP.text = _score.ToString();
+                    return;
+                }
+                else
+                {
+                    // Wrong key
+                    return;
+                }
+            }
+        }
     }
 }

@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 639499f4409d44b2a22f89c0d9c4fb15, type: 3}
+  m_Name: NoteSpriteConfigSO
+  m_EditorClassIdentifier: 
+  NoteSpriteConfigs:
+  - NoteType: 0
+    Sprite: {fileID: 21300000, guid: 04b628fbd31f5bd4a80a6d7bdc44467a, type: 3}
+  - NoteType: 5
+    Sprite: {fileID: 21300000, guid: ffff12071bf6ebb4981397fca72b818a, type: 3}
+  - NoteType: 1
+    Sprite: {fileID: 21300000, guid: 61073120577f8844d81dac9f133c14e5, type: 3}
+  - NoteType: 2
+    Sprite: {fileID: 21300000, guid: f3db0f2a9b822fc44b4b7d4e5939b275, type: 3}
+  - NoteType: 3
+    Sprite: {fileID: 21300000, guid: 47047ae8945c37d44bee16d3c6a888cb, type: 3}
+  - NoteType: 4
+    Sprite: {fileID: 21300000, guid: 1e7d8a4a8542740439228dd57b261aa4, type: 3}
+  - NoteType: 6
+    Sprite: {fileID: 21300000, guid: 3c0a86c7b36004442875fb23d7781bce, type: 3}
+  - NoteType: 7
+    Sprite: {fileID: 21300000, guid: d4091e5056ed16a4b9262bca403f3e81, type: 3}

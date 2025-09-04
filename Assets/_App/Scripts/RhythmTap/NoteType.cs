@@ -18,8 +18,6 @@ public class NoteHelper
     /// </summary>
     public static NoteType ConvertMidiNoteToNoteType(int midiNote, int octave = 5)
     {
-        midiNote += 12;
-        
         if (midiNote < octave * 12 || midiNote >= (octave + 1) * 12)
         {
             return NoteType.None;
