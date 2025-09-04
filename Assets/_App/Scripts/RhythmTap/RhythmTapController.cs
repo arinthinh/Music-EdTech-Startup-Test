@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using MidiPlayerTK;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class RhythmTapController : MonoBehaviour
 {
@@ -9,19 +10,21 @@ public class RhythmTapController : MonoBehaviour
     [SerializeField] private MidiFilePlayer _midiFilePlayer;
     [SerializeField] private NoteFactory _noteFactory;
     [SerializeField] private Transform[] _lanes;
+    [SerializeField] private Button _startButton;
 
-    private SessionData _sessionData;
     private List<MovingNote> _activeNotes = new();
     [SerializeField] private List<NoteData> _noteDatas = new();
 
     private void OnEnable()
     {
+        _startButton.onClick.AddListener(StartSong);
         EventBus.Subscribe<NoteStartHoldEvent>(OnNoteStartHold);
         EventBus.Subscribe<NoteStopHoldEvent>(OnNoteStopHold);
     }
 
     private void OnDisable()
     {
+        _startButton.onClick.RemoveListener(StartSong);
         EventBus.Unsubscribe<NoteStartHoldEvent>(OnNoteStartHold);
         EventBus.Unsubscribe<NoteStopHoldEvent>(OnNoteStopHold);
     }
@@ -37,8 +40,6 @@ public class RhythmTapController : MonoBehaviour
         SpawnNotes();
         await UniTask.Yield();
         StartSong();
-        await UniTask.WaitForSeconds(1f);
-        _midiFilePlayer.MPTK_Tempo += 20;
     }
 
     private void SpawnNotes()
@@ -50,7 +51,7 @@ public class RhythmTapController : MonoBehaviour
         {
             if (midiEvent.Command == MPTKCommand.NoteOn)
             {
-                var note = ConvertMidiNoteToNoteType(midiEvent.Value);
+                var note = NoteHelper.ConvertMidiNoteToNoteType(midiEvent.Value);
                 if (note != NoteType.None)
                 {
                     _noteDatas.Add(new(note, midiEvent.Tick));
@@ -71,6 +72,7 @@ public class RhythmTapController : MonoBehaviour
 
     private void StartSong()
     {
+        _startButton.gameObject.SetActive(false);
         _midiFilePlayer.MPTK_Play();
     }
 
@@ -80,28 +82,6 @@ public class RhythmTapController : MonoBehaviour
         UpdateActiveNotes(_midiFilePlayer.MPTK_MidiLoaded.MPTK_TickPlayer);
     }
 
-    /// <summary>
-    /// Convert MIDI number in octave 5 to NoteType. Returns null if not octave 5 or not a natural note.
-    /// </summary>
-    private NoteType ConvertMidiNoteToNoteType(int midiNote)
-    {
-        midiNote += 12;
-        if (midiNote is < 72 or > 83)
-            return NoteType.None;
-
-        int noteInOctave = midiNote % 12;
-        switch (noteInOctave)
-        {
-            case 0: return NoteType.C;
-            case 2: return NoteType.D;
-            case 4: return NoteType.E;
-            case 5: return NoteType.F;
-            case 7: return NoteType.G;
-            case 9: return NoteType.A;
-            case 11: return NoteType.B;
-            default: return NoteType.None;
-        }
-    }
 
     private void UpdateActiveNotes(double currentTick)
     {
@@ -124,25 +104,5 @@ public class RhythmTapController : MonoBehaviour
 
     private void OnNoteStopHold(NoteStopHoldEvent obj)
     {
-    }
-
-    /*
-    public static float CalculateNoteSpeed(double bpm, int ticksPerQuarterNote = 480)
-    {
-        return (float)(bpm * ticksPerQuarterNote / 60) / 200f;
-    }
-    */
-
-    public static float CalculateNoteSpeed(double noteTick, double currentTick, double bpm)
-    {
-        double ticksPerSecond = bpm * Define.TICKS_PER_QUARTER_NOTE / 60.0;
-        double secondsToArrive = (noteTick - currentTick) / ticksPerSecond;
-        if (secondsToArrive <= 0) return 0f;
-        return (float)(Define.NOTE_SPAWN_DISTANCE / secondsToArrive);
-    }
-
-    public static float CalculateTicksPerSecond(float bpm)
-    {
-        return Define.TICKS_PER_QUARTER_NOTE * bpm / 60f;
     }
 }

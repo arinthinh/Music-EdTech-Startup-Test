@@ -6,6 +6,7 @@ public class NoteData
     public NoteType NoteType;
     public double Tick;
     public bool IsSpawned;
+    public bool IsScored;
     
     public NoteData(NoteType noteType, double tick)
     {

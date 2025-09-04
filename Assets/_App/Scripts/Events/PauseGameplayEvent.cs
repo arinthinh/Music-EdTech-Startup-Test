@@ -1,0 +1,3 @@
+    public struct PauseGameplayEvent : IEvent
+    {
+    }
