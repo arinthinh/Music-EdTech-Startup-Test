@@ -6,6 +6,16 @@
 
 ---
 
+## Tổng quan
+
+## Tổng quan
+
+- Khi khởi động ứng dụng, người chơi được đưa trực tiếp vào màn chơi Rhythm Tap mà không qua các màn hình lựa chọn hay menu phụ.
+- Khi bài nhạc kết thúc, game sẽ tự động phát lại từ đầu.
+- Trong quá trình chơi, các note nhạc sẽ di chuyển từ phải sang trái trên màn hình. Khi note đi vào vùng "đánh" nằm bên cạnh khóa Sol, người chơi cần nhấn đúng phím đàn tương ứng (từ C đến B) theo thứ tự các note xuất hiện. Mỗi lần nhấn đúng sẽ ảnh hưởng trực tiếp đến điểm số, chuỗi combo và tốc độ BPM của bài nhạc.
+  
+---
+
 ## Điểm đã làm được
 
 1. **Gameplay Rhythm Tap**  
