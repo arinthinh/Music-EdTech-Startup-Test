@@ -197,7 +197,7 @@ public class RhythmTapScreen : UIScreen
         foreach (var note in _activeNotes)
         {
             if (note.IsScored) continue;
-            if (note.CurrentPositionX is < 10 and > -100)
+            if (note.CurrentPositionX is < 40 and > -100)
             {
                 // Hit
                 if (noteType == note.NoteType)
