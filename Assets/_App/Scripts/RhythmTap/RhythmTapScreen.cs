@@ -30,6 +30,8 @@ public class RhythmTapScreen : UIScreen
     private bool _isPlaying;
     private double _lastTick;
     private int _score;
+    private int _streakCount;
+    private int _modifiedBMP;
 
     private readonly List<MovingNote> _activeNotes = new();
     private readonly List<NoteData> _noteDatas = new();
@@ -129,6 +131,7 @@ public class RhythmTapScreen : UIScreen
         var currentTick = _midiFilePlayer.MPTK_MidiLoaded.MPTK_TickPlayer;
         UpdateActiveNotes(currentTick);
 
+        _midiFilePlayer.MPTK_Tempo = _songData.BPM + _modifiedBMP;
         if (currentTick >= _lastTick) HandleEndSong();
     }
 
@@ -142,6 +145,17 @@ public class RhythmTapScreen : UIScreen
             // Check for miss
             if (!note.IsScored && note.CurrentPositionX <= -170)
             {
+                if (_streakCount > 0)
+                {
+                    _modifiedBMP = 0;
+                    _streakCount = 0;
+                }
+                _streakCount--;
+                if (_streakCount < -3 && _modifiedBMP > -30)
+                {
+                    _modifiedBMP -= 10;
+                }
+
                 note.SetScored(false);
             }
 
@@ -173,7 +187,6 @@ public class RhythmTapScreen : UIScreen
         Show();
     }
 
-
     private void PlayHideAnimation()
     {
     }
@@ -204,6 +217,18 @@ public class RhythmTapScreen : UIScreen
                 {
                     note.SetScored(true);
                     _score += 100;
+
+                    if (_streakCount < 0)
+                    {
+                        _modifiedBMP = 0;
+                        _streakCount = 0;
+                    }
+                    _streakCount++;
+                    if (_streakCount > 3 && _modifiedBMP < 30)
+                    {
+                        _modifiedBMP += 10;
+                    }
+                    
                     _scoreTMP.text = _score.ToString();
                     return;
                 }
